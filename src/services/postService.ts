@@ -37,5 +37,18 @@ export const postService = {
 
     if (error) throw error;
     return true;
+  },
+
+  async getPublicPosts(category?: string | null) {
+    let query = supabase.from('posts').select('*');
+
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    const { data, error } = await query.order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
   }
 };
