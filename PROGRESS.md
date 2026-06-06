@@ -1,6 +1,30 @@
 # 🚀 Project Progress Tracking
 
-### Current Status: Phase 1 (Database & Authentication)
+### Current Status: Phase 2 (Core Features & Monetization)
+
+### Day 6: Saturday, June 6
+
+**Completed:**
+- **Database Abstraction:** Built a complete `postService` layer to abstract all Supabase database interactions.
+- **Content Creation:** Integrated `postService` into the `CreatePostModal`, enabling real-time article creation with full TypeScript support for premium flag definitions.
+- **Admin & Management:** Refactored and updated the Admin Dashboard to dynamically fetch, map, and delete posts directly via the service layer.
+- **Data Fetching & Filtering:** Implemented `getPublicPosts` and `getPostById` methods to handle real-time category filtering and rich dynamic routing (`/blog/[id]`) for single blog views.
+- **Stripe Monetization:** Successfully set up the Stripe CLI environment and implemented the full Stripe Checkout Session infrastructure.
+- **Secure Webhook Pipeline:** Engineered a robust Stripe Webhook handler using Supabase **Service Role Client** to safely bypass RLS and dynamically upgrade profiles to premium upon successful payment.
+- **Role & Access Enforcement:** Fixed frontend state synchronization by binding profile roles and subscription statuses to the global authentication listener on the Home Page.
+- **Paywall Access Control:** Developed strict paywall restriction mechanics, allowing immediate premium content access to paying subscribers and Admins while triggering a conversion modal for Free readers.
+- **Dynamic Navbar Sync:** Enhanced the `Navbar` component to dynamically receive subscription data and reflect an animated Premium Badge inside the profile dropdown menu.
+
+**Next Steps:**
+- Implement Post Editing capabilities (Core functionality remaining for Content Management).
+- Integrate global search filtering on the Homepage search bar utilizing Supabase text queries.
+- Deploy the production build onto Vercel and configure all sensitive environment variables (`.env`).
+- Finalize project documentation and prepare the GitHub repository for submission.
+
+**Challenges:**
+- Ran into a Row Level Security (RLS) block when attempting to update user subscription statuses through standard frontend database queries. Resolved it by creating an isolated admin client using the `SUPABASE_SERVICE_ROLE_KEY` inside the secure Webhook endpoint.
+
+**Status:** Ahead of Schedule
 
 ---
 
