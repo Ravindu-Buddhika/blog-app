@@ -6,7 +6,7 @@ import { supabase } from '@/lib/supabaseClient';
 
 interface NavbarProps {
   user: any;
-  userType: string; 
+  userType: string;
 }
 
 export default function Navbar({ user, userType }: NavbarProps) {
@@ -35,13 +35,14 @@ export default function Navbar({ user, userType }: NavbarProps) {
       <Link href="/" className="text-3xl font-serif font-black tracking-tight text-black">
         Blog
       </Link>
-      
-      <nav className="hidden md:flex space-x-8 text-sm font-medium text-slate-600">
-        <span className="hover:text-black cursor-pointer transition">Science & Technology</span>
-        <span className="hover:text-black cursor-pointer transition">Economy</span>
-        <span className="hover:text-black cursor-pointer transition">Sport</span>
-        <span className="hover:text-black cursor-pointer transition">News</span>
-        <span className="hover:text-black cursor-pointer transition">Entertainment</span>
+
+      <nav className="hidden md:flex space-x-6 text-sm font-medium text-slate-600">
+        <Link href="/" className="hover:text-blue-600 transition">All</Link>
+        <Link href="/?category=Science and Technology" className="hover:text-blue-600 transition">Science & Tech</Link>
+        <Link href="/?category=Economy" className="hover:text-blue-600 transition">Economy</Link>
+        <Link href="/?category=Sport" className="hover:text-blue-600 transition">Sport</Link>
+        <Link href="/?category=News" className="hover:text-blue-600 transition">News</Link>
+        <Link href="/?category=Entertainment" className="hover:text-blue-600 transition">Entertainment</Link>
       </nav>
 
       <div className="relative" ref={dropdownRef}>
@@ -59,12 +60,11 @@ export default function Navbar({ user, userType }: NavbarProps) {
                 <div className="px-5 py-2.5 border-b border-slate-100">
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Logged in as</p>
                   <p className="text-sm font-bold text-slate-800 truncate mt-0.5">{user.email}</p>
-                  
-                  <span className={`inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-bold border capitalize ${
-                    isAuthorOrAdmin
-                      ? 'bg-blue-50 text-blue-700 border-blue-200' 
+
+                  <span className={`inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-bold border capitalize ${isAuthorOrAdmin
+                      ? 'bg-blue-50 text-blue-700 border-blue-200'
                       : 'bg-slate-100 text-slate-700 border-slate-200'
-                  }`}>
+                    }`}>
                     {userType || 'Reader'}
                   </span>
                 </div>
