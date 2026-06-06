@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { postService } from '@/services/postService'; // 👈 Service Layer එක ඉම්පෝර්ට් කරා
+import { postService } from '@/services/postService';
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -15,6 +15,7 @@ export default function CreatePostModal({ isOpen, onClose, onPostCreated }: Crea
   const [category, setCategory] = useState('Science & Technology');
   const [content, setContent] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [isPremium, setIsPremium] = useState(false); 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -36,16 +37,19 @@ export default function CreatePostModal({ isOpen, onClose, onPostCreated }: Crea
         title,
         category,
         content,
-        imageUrl: imageUrl,
+        imageUrl, 
         authorId: user.id,
+        isPremium,
       });
 
       setTitle('');
+      setCategory('Science & Technology');
       setContent('');
       setImageUrl('');
+      setIsPremium(false);
       onPostCreated();
       onClose();
-      
+
     } catch (err: any) {
       setError(err.message || 'Something went wrong while creating the post.');
     } finally {
@@ -56,14 +60,14 @@ export default function CreatePostModal({ isOpen, onClose, onPostCreated }: Crea
   return (
     <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
       <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-2xl max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
-        
+
         {/* Header */}
         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center sticky top-0 bg-white z-10">
           <div>
             <h3 className="text-xl font-bold text-slate-900">Create New Post</h3>
             <p className="text-xs text-slate-500 mt-0.5">Publish a new story, article, or news update.</p>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition"
           >
@@ -79,6 +83,7 @@ export default function CreatePostModal({ isOpen, onClose, onPostCreated }: Crea
             </div>
           )}
 
+          {/* Title */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">Post Title</label>
             <input
@@ -91,6 +96,7 @@ export default function CreatePostModal({ isOpen, onClose, onPostCreated }: Crea
             />
           </div>
 
+          {/* Category & Image URL */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">Category</label>
@@ -119,6 +125,21 @@ export default function CreatePostModal({ isOpen, onClose, onPostCreated }: Crea
             </div>
           </div>
 
+          {/* 🔒 2. Premium Content Checkbox */}
+          <div className="flex items-center space-x-3 p-3.5 bg-amber-50 border border-amber-200 rounded-2xl my-2">
+            <input
+              type="checkbox"
+              id="isPremium"
+              checked={isPremium}
+              onChange={(e) => setIsPremium(e.target.checked)}
+              className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500 transition cursor-pointer"
+            />
+            <label htmlFor="isPremium" className="text-xs font-bold text-amber-900 select-none cursor-pointer">
+              ⭐ Mark as Premium Content (Only accessible for Subscribers)
+            </label>
+          </div>
+
+          {/* Content TextArea */}
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-2">Content</label>
             <textarea
