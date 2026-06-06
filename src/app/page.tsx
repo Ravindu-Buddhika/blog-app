@@ -1,21 +1,20 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import { postService } from '@/services/postService';
 import Navbar from '@/components/Navbar';
 import BlogCardMini from '@/components/BlogCardMini';
 
-const dummyBlogs = [
-  { id: 1, title: "Take-Two confirms GTA 6 is on track to launch on November 19, 2026.", image: "https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop", date: "November 19, 2026", isPremium: false },
-  { id: 2, title: "Trophy Launch Sri Lanka vs West Indies ODI Series", image: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?q=80&w=600&auto=format&fit=crop", date: "June 5, 2026", isPremium: false },
-  { id: 3, title: "IMF approves third review of Sri Lanka's $2.9bn bailout, but warns of risks", image: "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?q=80&w=600&auto=format&fit=crop", date: "June 5, 2026", isPremium: false },
-  { id: 4, title: "McGregor to make UFC comeback on July 11", image: "https://images.unsplash.com/photo-1517438476312-10d79c67756d?q=80&w=600&auto=format&fit=crop", date: "July 11", isPremium: false },
-  { id: 5, title: "US House votes to end Trump's Iran war: Does it matter?", image: "https://images.unsplash.com/photo-1541872703-74c5e44368f9?q=80&w=600&auto=format&fit=crop", date: "June 5, 2026", isPremium: false },
-  { id: 6, title: "US government releases UFO sighting reports - 'Orbs swarming in all directions'", image: "", date: "June 5, 2026", isPremium: true }
-];
-
 export default function HomePage() {
+  const searchParams = useSearchParams();
+  const category = searchParams.get('category');
+
   const [user, setUser] = useState<any>(null);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
   let userType: string = "Basic Member";
 
   useEffect(() => {
@@ -31,6 +30,22 @@ export default function HomePage() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const fetchHomePosts = async () => {
+      setIsLoading(true);
+      try {
+        const data = await postService.getPublicPosts(category);
+        setPosts(data);
+      } catch (error) {
+        console.error('Error fetching public posts:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHomePosts();
+  }, [category]); 
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans">
@@ -52,13 +67,39 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Blog Grid using Reusable BlogCard */}
+      {/* Blog Grid using Reusable BlogCardMini */}
       <main className="max-w-6xl mx-auto px-6 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {dummyBlogs.map((blog) => (
-            <BlogCardMini key={blog.id} blog={blog} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="h-64 bg-slate-100 rounded-2xl animate-pulse" />
+            <div className="h-64 bg-slate-100 rounded-2xl animate-pulse" />
+            <div className="h-64 bg-slate-100 rounded-2xl animate-pulse" />
+          </div>
+        ) : posts.length === 0 ? (
+
+          <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+            <p className="text-slate-500 font-medium">No articles found {category ? `in "${category}"` : ''}.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {posts.map((post) => (
+              <BlogCardMini 
+                key={post.id} 
+                blog={{
+                  id: post.id,
+                  title: post.title,
+                  image: post.image_url,
+                  date: new Date(post.created_at).toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric'
+                  }),
+                  isPremium: false 
+                }} 
+              />
+            ))}
+          </div>
+        )}
       </main>
 
     </div>
