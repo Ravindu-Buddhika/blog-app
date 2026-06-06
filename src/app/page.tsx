@@ -4,7 +4,6 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { postService } from '@/services/postService';
-import { authService } from '@/services/authService';
 import Navbar from '@/components/Navbar';
 import BlogCardMini from '@/components/BlogCardMini';
 
@@ -16,14 +15,16 @@ export default function HomePage() {
   const [user, setUser] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [userType, setUserType] = useState<string>('reader'); 
-  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true); 
+  
 
+  const [userRole, setUserRole] = useState<string>('reader'); 
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string>('free'); 
+  
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true); 
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
 
-
   useEffect(() => {
-    async function fetchUserSessionAndRole() {
+    async function fetchUserSessionAndProfile() {
       try {
         setIsAuthLoading(true);
         
@@ -32,29 +33,49 @@ export default function HomePage() {
         setUser(currentUser);
 
         if (currentUser) {
-          const role = await authService.getUserRole(currentUser.id);
-          setUserType(role.toLowerCase()); 
+
+          const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('role, subscription_status')
+            .eq('id', currentUser.id)
+            .single();
+
+          if (profile && !error) {
+            setUserRole(profile.role?.toLowerCase() || 'reader');
+            setSubscriptionStatus(profile.subscription_status?.toLowerCase() || 'free');
+          }
         } else {
-          setUserType('reader');
+          setUserRole('reader');
+          setSubscriptionStatus('free');
         }
       } catch (error) {
-        console.error("Error fetching user session or role:", error);
+        console.error("Error fetching user profile:", error);
       } finally {
         setIsAuthLoading(false);
       }
     }
 
-    fetchUserSessionAndRole();
+    fetchUserSessionAndProfile();
+
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       
       if (currentUser) {
-        const role = await authService.getUserRole(currentUser.id);
-        setUserType(role.toLowerCase());
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role, subscription_status')
+          .eq('id', currentUser.id)
+          .single();
+
+        if (profile) {
+          setUserRole(profile.role?.toLowerCase() || 'reader');
+          setSubscriptionStatus(profile.subscription_status?.toLowerCase() || 'free');
+        }
       } else {
-        setUserType('reader');
+        setUserRole('reader');
+        setSubscriptionStatus('free');
       }
     });
 
@@ -78,14 +99,13 @@ export default function HomePage() {
   }, [category]); 
 
   const handlePostClick = (post: any) => {
-
     if (!user) {
       router.push('/login');
       return;
     }
 
-
-    if (post.is_premium && userType !== 'premium' && userType !== 'admin') {
+    
+    if (post.is_premium && subscriptionStatus !== 'premium' && userRole !== 'admin') {
       setIsPremiumModalOpen(true);
       return;
     }
@@ -104,8 +124,8 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans relative">
       
-      {/* Reusable Navbar */}
-      <Navbar user={user} userType={userType} />
+      
+      <Navbar user={user} userType={userRole} subscriptionStatus={subscriptionStatus} />
 
       {/* Search Bar Section */}
       <div className="max-w-2xl mx-auto px-4 mt-8">
