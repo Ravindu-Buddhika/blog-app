@@ -7,9 +7,10 @@ import { supabase } from '@/lib/supabaseClient';
 interface NavbarProps {
   user: any;
   userType: string;
+  subscriptionStatus?: string; 
 }
 
-export default function Navbar({ user, userType }: NavbarProps) {
+export default function Navbar({ user, userType, subscriptionStatus }: NavbarProps) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -29,6 +30,8 @@ export default function Navbar({ user, userType }: NavbarProps) {
   };
 
   const isAuthorOrAdmin = userType?.toLowerCase() === 'author' || userType?.toLowerCase() === 'admin';
+  
+  const isPremiumUser = subscriptionStatus?.toLowerCase() === 'premium';
 
   return (
     <header className="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center border-b border-slate-100">
@@ -61,12 +64,21 @@ export default function Navbar({ user, userType }: NavbarProps) {
                   <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Logged in as</p>
                   <p className="text-sm font-bold text-slate-800 truncate mt-0.5">{user.email}</p>
 
-                  <span className={`inline-flex items-center mt-2 px-2.5 py-0.5 rounded-full text-xs font-bold border capitalize ${isAuthorOrAdmin
-                      ? 'bg-blue-50 text-blue-700 border-blue-200'
-                      : 'bg-slate-100 text-slate-700 border-slate-200'
-                    }`}>
-                    {userType || 'Reader'}
-                  </span>
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border capitalize ${isAuthorOrAdmin
+                        ? 'bg-blue-50 text-blue-700 border-blue-200'
+                        : 'bg-slate-100 text-slate-700 border-slate-200'
+                      }`}>
+                      {userType || 'Reader'}
+                    </span>
+
+                    
+                    {isPremiumUser && (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border bg-amber-50 text-amber-700 border-amber-200 animate-pulse">
+                        ⭐ Premium
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 {isAuthorOrAdmin && (
