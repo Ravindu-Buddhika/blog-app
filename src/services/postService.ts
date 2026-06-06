@@ -50,5 +50,16 @@ export const postService = {
 
     if (error) throw error;
     return data || [];
+  },
+
+  async getPostById(id: string) {
+    const { data, error } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 };
