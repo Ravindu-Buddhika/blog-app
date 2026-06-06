@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { postService } from '@/services/postService';
 import { authService } from '@/services/authService';
@@ -11,26 +11,27 @@ import BlogCardMini from '@/components/BlogCardMini';
 export default function HomePage() {
   const searchParams = useSearchParams();
   const category = searchParams.get('category');
+  const router = useRouter();
 
   const [user, setUser] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [userType, setUserType] = useState<string>('reader'); // 👈 ආපහු සිම්පල් 'reader' කලා කිසිම අවුලක් නොවෙන්න
-  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true); // 👈 Auth එක චෙක් කරලා ඉවර වෙනකන් ට්‍රැක් කරන්න
+  const [userType, setUserType] = useState<string>('reader'); 
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true); 
 
-  // 🔐 Auth Session සහ User Role එක Profiles ටේබල් එකෙන් ලයිව් ඇදලා ගැනීම
+  const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+
+
   useEffect(() => {
     async function fetchUserSessionAndRole() {
       try {
         setIsAuthLoading(true);
         
-        // 1. මුලින්ම දැනට ඉන්න Auth යූසර්ව ගන්නවා
         const { data: { session } } = await supabase.auth.getSession();
         const currentUser = session?.user ?? null;
         setUser(currentUser);
 
         if (currentUser) {
-          // 2. යූසර් ඉන්නවා නම්Profiles එකෙන් රෝල් එක අරන් lowercase කරලාම ස්ටේට් එකට දානවා
           const role = await authService.getUserRole(currentUser.id);
           setUserType(role.toLowerCase()); 
         } else {
@@ -45,7 +46,6 @@ export default function HomePage() {
 
     fetchUserSessionAndRole();
 
-    // ලයිව් ලොග් ඉන් / ලොග් අවුට් ට්‍රැක් කරන ලිස්නර් එක
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
@@ -61,7 +61,6 @@ export default function HomePage() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // 📝 බ්ලොග් පෝස්ට් ටික ලෝඩ් කරන සෙක්ෂන් එක
   useEffect(() => {
     const fetchHomePosts = async () => {
       setIsLoading(true);
@@ -78,7 +77,22 @@ export default function HomePage() {
     fetchHomePosts();
   }, [category]); 
 
-  // Auth එක චෙක් කරලා ඉවර වෙනකන් විතරක් මුළු පේජ් එකම ලෝඩින් එකක් පෙන්වනවා (පළවෙනි කෝඩ් එකේ වගේමයි)
+  const handlePostClick = (post: any) => {
+
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+
+    if (post.is_premium && userType !== 'premium' && userType !== 'admin') {
+      setIsPremiumModalOpen(true);
+      return;
+    }
+
+    router.push(`/blog/${post.id}`);
+  };
+
   if (isAuthLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-white">
@@ -88,9 +102,9 @@ export default function HomePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans">
+    <div className="min-h-screen bg-white text-slate-900 font-sans relative">
       
-      {/* Reusable Navbar - දැන් ලයිව් යූසර් රෝල් එක මෙතනට නූලට පාස් වෙනවා */}
+      {/* Reusable Navbar */}
       <Navbar user={user} userType={userType} />
 
       {/* Search Bar Section */}
@@ -107,7 +121,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Blog Grid using Reusable BlogCardMini */}
+      {/* Blog Grid */}
       <main className="max-w-6xl mx-auto px-6 py-12">
         {isLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -122,24 +136,67 @@ export default function HomePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {posts.map((post) => (
-              <BlogCardMini 
+              <div 
                 key={post.id} 
-                blog={{
-                  id: post.id,
-                  title: post.title,
-                  image: post.image_url,
-                  date: new Date(post.created_at).toLocaleDateString('en-US', {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric'
-                  }),
-                  isPremium: false 
-                }} 
-              />
+                onClick={() => handlePostClick(post)} 
+                className="cursor-pointer block"
+              >
+                <BlogCardMini 
+                  blog={{
+                    id: post.id,
+                    title: post.title,
+                    image: post.image_url,
+                    date: new Date(post.created_at).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric'
+                    }),
+                    isPremium: post.is_premium 
+                  }} 
+                />
+              </div>
             ))}
           </div>
         )}
       </main>
+
+      {/* 🚨 Premium Upgrade Popup Modal */}
+      {isPremiumModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-sm p-6 text-center animate-in zoom-in-95 duration-150">
+            
+            <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-100">
+              <span className="text-2xl">⭐</span>
+            </div>
+
+            <h3 className="text-lg font-bold text-slate-900">Premium Content Locked</h3>
+            <p className="text-xs text-slate-500 mt-2 leading-relaxed">
+              This article is exclusive to Premium Members. Upgrade your subscription today to unlock unlimited access.
+            </p>
+
+            {/* Buttons */}
+            <div className="mt-5 flex flex-col space-y-2.5">
+              <button
+                onClick={() => {
+                  setIsPremiumModalOpen(false);
+                  router.push('/subscribe');
+                }}
+                className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl transition shadow-sm"
+              >
+                Buy Premium Membership
+              </button>
+              
+              <button
+                onClick={() => setIsPremiumModalOpen(false)}
+                className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 font-medium text-xs rounded-xl transition"
+              >
+                Go Back
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
