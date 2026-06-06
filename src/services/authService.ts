@@ -29,5 +29,23 @@ export const authService = {
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error) return null;
     return user;
+  },
+
+  async getUserRole(userId: string): Promise<string> {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+
+      if (error || !data) {
+        return 'reader';
+      }
+
+      return data.role;
+    } catch {
+      return 'reader';
+    }
   }
 };

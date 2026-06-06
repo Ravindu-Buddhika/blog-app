@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { postService } from '@/services/postService';
+import { authService } from '@/services/authService';
 import Navbar from '@/components/Navbar';
 import BlogCardMini from '@/components/BlogCardMini';
 
@@ -14,23 +15,53 @@ export default function HomePage() {
   const [user, setUser] = useState<any>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
-  let userType: string = "Basic Member";
+  const [userType, setUserType] = useState<string>('reader'); // 👈 ආපහු සිම්පල් 'reader' කලා කිසිම අවුලක් නොවෙන්න
+  const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true); // 👈 Auth එක චෙක් කරලා ඉවර වෙනකන් ට්‍රැක් කරන්න
 
+  // 🔐 Auth Session සහ User Role එක Profiles ටේබල් එකෙන් ලයිව් ඇදලා ගැනීම
   useEffect(() => {
-    const getSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user ?? null);
-    };
-    getSession();
+    async function fetchUserSessionAndRole() {
+      try {
+        setIsAuthLoading(true);
+        
+        // 1. මුලින්ම දැනට ඉන්න Auth යූසර්ව ගන්නවා
+        const { data: { session } } = await supabase.auth.getSession();
+        const currentUser = session?.user ?? null;
+        setUser(currentUser);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+        if (currentUser) {
+          // 2. යූසර් ඉන්නවා නම්Profiles එකෙන් රෝල් එක අරන් lowercase කරලාම ස්ටේට් එකට දානවා
+          const role = await authService.getUserRole(currentUser.id);
+          setUserType(role.toLowerCase()); 
+        } else {
+          setUserType('reader');
+        }
+      } catch (error) {
+        console.error("Error fetching user session or role:", error);
+      } finally {
+        setIsAuthLoading(false);
+      }
+    }
+
+    fetchUserSessionAndRole();
+
+    // ලයිව් ලොග් ඉන් / ලොග් අවුට් ට්‍රැක් කරන ලිස්නර් එක
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      
+      if (currentUser) {
+        const role = await authService.getUserRole(currentUser.id);
+        setUserType(role.toLowerCase());
+      } else {
+        setUserType('reader');
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
+  // 📝 බ්ලොග් පෝස්ට් ටික ලෝඩ් කරන සෙක්ෂන් එක
   useEffect(() => {
     const fetchHomePosts = async () => {
       setIsLoading(true);
@@ -47,10 +78,19 @@ export default function HomePage() {
     fetchHomePosts();
   }, [category]); 
 
+  // Auth එක චෙක් කරලා ඉවර වෙනකන් විතරක් මුළු පේජ් එකම ලෝඩින් එකක් පෙන්වනවා (පළවෙනි කෝඩ් එකේ වගේමයි)
+  if (isAuthLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-black" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans">
       
-      {/* Reusable Navbar */}
+      {/* Reusable Navbar - දැන් ලයිව් යූසර් රෝල් එක මෙතනට නූලට පාස් වෙනවා */}
       <Navbar user={user} userType={userType} />
 
       {/* Search Bar Section */}
@@ -76,7 +116,6 @@ export default function HomePage() {
             <div className="h-64 bg-slate-100 rounded-2xl animate-pulse" />
           </div>
         ) : posts.length === 0 ? (
-
           <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
             <p className="text-slate-500 font-medium">No articles found {category ? `in "${category}"` : ''}.</p>
           </div>

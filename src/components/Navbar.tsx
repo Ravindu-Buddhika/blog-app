@@ -38,7 +38,7 @@ export default function Navbar({ user, userType }: NavbarProps) {
 
       <nav className="hidden md:flex space-x-6 text-sm font-medium text-slate-600">
         <Link href="/" className="hover:text-blue-600 transition">All</Link>
-        <Link href="/?category=Science and Technology" className="hover:text-blue-600 transition">Science & Tech</Link>
+        <Link href="/?category=Science & Technology" className="hover:text-blue-600 transition">Science & Tech</Link>
         <Link href="/?category=Economy" className="hover:text-blue-600 transition">Economy</Link>
         <Link href="/?category=Sport" className="hover:text-blue-600 transition">Sport</Link>
         <Link href="/?category=News" className="hover:text-blue-600 transition">News</Link>
