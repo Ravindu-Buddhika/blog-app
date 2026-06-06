@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { postService } from '@/services/postService'; // 👈 Service Layer එක ඉම්පෝර්ට් කරා
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -31,20 +32,13 @@ export default function CreatePostModal({ isOpen, onClose, onPostCreated }: Crea
         throw new Error('User session not found. Please log in again.');
       }
 
-      const { error: insertError } = await supabase
-        .from('posts')
-        .insert([
-          {
-            title,
-            category,
-            content,
-            image_url: imageUrl || 'https://images.unsplash.com/photo-1499750310107-5fef28a66643', // Default image එකක්
-            author_id: user.id,
-            created_at: new Date().toISOString()
-          }
-        ]);
-
-      if (insertError) throw insertError;
+      await postService.createPost({
+        title,
+        category,
+        content,
+        imageUrl: imageUrl,
+        authorId: user.id,
+      });
 
       setTitle('');
       setContent('');
