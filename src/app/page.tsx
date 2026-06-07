@@ -16,12 +16,13 @@ export default function HomePage() {
   const [posts, setPosts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-
   const [userRole, setUserRole] = useState<string>('reader'); 
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>('free'); 
   
   const [isAuthLoading, setIsAuthLoading] = useState<boolean>(true); 
   const [isPremiumModalOpen, setIsPremiumModalOpen] = useState(false);
+
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   useEffect(() => {
     async function fetchUserSessionAndProfile() {
@@ -33,7 +34,6 @@ export default function HomePage() {
         setUser(currentUser);
 
         if (currentUser) {
-
           const { data: profile, error } = await supabase
             .from('profiles')
             .select('role, subscription_status')
@@ -56,7 +56,6 @@ export default function HomePage() {
     }
 
     fetchUserSessionAndProfile();
-
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       const currentUser = session?.user ?? null;
@@ -86,7 +85,7 @@ export default function HomePage() {
     const fetchHomePosts = async () => {
       setIsLoading(true);
       try {
-        const data = await postService.getPublicPosts(category);
+        const data = await postService.getPublicPosts(category, searchTerm);
         setPosts(data);
       } catch (error) {
         console.error('Error fetching public posts:', error);
@@ -95,15 +94,19 @@ export default function HomePage() {
       }
     };
 
-    fetchHomePosts();
-  }, [category]); 
+
+    const delayDebounceFn = setTimeout(() => {
+      fetchHomePosts();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [category, searchTerm]); 
 
   const handlePostClick = (post: any) => {
     if (!user) {
       router.push('/login');
       return;
     }
-
     
     if (post.is_premium && subscriptionStatus !== 'premium' && userRole !== 'admin') {
       setIsPremiumModalOpen(true);
@@ -123,8 +126,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans relative">
-      
-      
       <Navbar user={user} userType={userRole} subscriptionStatus={subscriptionStatus} />
 
       {/* Search Bar Section */}
@@ -132,7 +133,9 @@ export default function HomePage() {
         <div className="relative">
           <input
             type="text"
-            placeholder="Search blogs..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder={category ? `Search blogs in "${category}"...` : "Search blogs..."}
             className="w-full px-5 py-3.5 bg-white border border-slate-300 rounded-full shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition pl-12"
           />
           <svg className="absolute left-4 top-4 h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -151,7 +154,11 @@ export default function HomePage() {
           </div>
         ) : posts.length === 0 ? (
           <div className="text-center py-12 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-            <p className="text-slate-500 font-medium">No articles found {category ? `in "${category}"` : ''}.</p>
+            <p className="text-slate-500 font-medium">
+              {searchTerm 
+                ? `No articles found matching "${searchTerm}"` 
+                : `No articles found ${category ? `in "${category}"` : ''}.`}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -184,7 +191,6 @@ export default function HomePage() {
       {isPremiumModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-sm p-6 text-center animate-in zoom-in-95 duration-150">
-            
             <div className="w-14 h-14 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-amber-100">
               <span className="text-2xl">⭐</span>
             </div>
@@ -194,7 +200,6 @@ export default function HomePage() {
               This article is exclusive to Premium Members. Upgrade your subscription today to unlock unlimited access.
             </p>
 
-            {/* Buttons */}
             <div className="mt-5 flex flex-col space-y-2.5">
               <button
                 onClick={() => {
@@ -213,11 +218,9 @@ export default function HomePage() {
                 Go Back
               </button>
             </div>
-
           </div>
         </div>
       )}
-
     </div>
   );
 }
