@@ -11,13 +11,13 @@ export const postService = {
     return data || [];
   },
 
-  async createPost(postData: { 
-    title: string; 
-    category: string; 
-    content: string; 
-    imageUrl: string; 
+  async createPost(postData: {
+    title: string;
+    category: string;
+    content: string;
+    imageUrl: string;
     authorId: string;
-    isPremium: boolean; 
+    isPremium: boolean;
   }) {
     const { error } = await supabase
       .from('posts')
@@ -47,11 +47,15 @@ export const postService = {
     return true;
   },
 
-  async getPublicPosts(category?: string | null) {
+    async getPublicPosts(category?: string | null, searchTerm?: string) {
     let query = supabase.from('posts').select('*');
 
     if (category) {
       query = query.eq('category', category);
+    }
+
+    if (searchTerm && searchTerm.trim() !== '') {
+      query = query.ilike('title', `%${searchTerm}%`);
     }
 
     const { data, error } = await query.order('created_at', { ascending: false });
