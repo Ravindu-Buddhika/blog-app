@@ -4,18 +4,19 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import AdminBlogCard from '@/components/AdminBlogCard';
 import CreatePostModal from '@/components/CreatePostModal';
-import { postService } from '@/services/postService'; // 👈 Service Layer එක ඉම්පෝර්ට් කරා
+import { postService } from '@/services/postService';
 
 export default function AdminDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [blogs, setBlogs] = useState<any[]>([]); // 👈 Live blogs තියාගන්න state එක
-  const [isLoading, setIsLoading] = useState(true); // 👈 Loading ස්ටේට් එක
+  const [blogs, setBlogs] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // 🔄 Service Layer එක හරහා සිස්ටම් එකේ ඇති සියලුම පෝස්ට් ඇදලා ගන්න function එක
+
+  const [editingPost, setEditingPost] = useState<any>(null);
+
   const fetchPosts = async () => {
     setIsLoading(true);
     try {
-      // 👈 කිසිම user_id එකකින් filter කරන්නේ නැතුව කෙලින්ම සියලුම පෝස්ට් ටික ගන්නවා
       const data = await postService.getDashboardPosts();
       setBlogs(data);
     } catch (error) {
@@ -25,24 +26,24 @@ export default function AdminDashboard() {
     }
   };
 
-  // 📅 පේජ් එක මුලින්ම ලෝඩ් වෙද්දී පෝස්ට් ටික ලෝඩ් කරනවා
   useEffect(() => {
     fetchPosts();
   }, []);
 
+
   const handleEdit = (id: number) => {
-    alert(`Redirecting to edit blog ID: ${id}`);
+    const postToEdit = blogs.find(blog => blog.id === id);
+    if (postToEdit) {
+      setEditingPost(postToEdit);
+      setIsModalOpen(true);
+    }
   };
 
-  // 🗑️ Service Layer එක හරහා පෝස්ට් එකක් ඩිලීට් කරන ලොජික් එක
   const handleDelete = async (id: number) => {
     const confirmDelete = confirm("Are you sure you want to delete this blog post?");
     if (confirmDelete) {
       try {
-        // 👈 සර්විස් එකෙන් ඩිලීට් ෆන්ක්ෂන් එක කෝල් කරනවා
         await postService.deletePost(id);
-        
-        // ඩේටාබේස් එකෙන් අයින් වුණාට පස්සේ ලිස්ට් එක අප්ඩේට් කරනවා
         alert(`Blog deleted successfully!`);
         fetchPosts();
       } catch (error) {
@@ -52,18 +53,21 @@ export default function AdminDashboard() {
     }
   };
 
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setEditingPost(null);
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans flex">
       
-      {/* Left Sidebar Layout */}
       <aside className="w-64 bg-white border-r border-slate-200 hidden md:flex flex-col justify-between p-6 h-screen sticky top-0">
         <div className="space-y-8">
-          {/* Logo */}
           <Link href="/" className="text-2xl font-serif font-black tracking-tight text-black block">
             Blog<span className="text-blue-600 text-sm">.admin</span>
           </Link>
 
-          {/* Navigation Menu */}
           <nav className="space-y-2">
             <Link href="/admin" className="flex items-center space-x-3 px-4 py-3 bg-slate-900 text-white font-medium text-sm rounded-xl transition">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,9 +90,7 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* Right Main Content Panel */}
       <main className="flex-1 p-6 md:p-10 max-w-4xl mx-auto">
-        {/* Top Bar inside content */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-6 mb-8">
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Author Dashboard</h1>
@@ -103,32 +105,28 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        {/* Blog Post List Section */}
         <div className="space-y-4">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
             Your Published Articles ({blogs.length})
           </h3>
           
           {isLoading ? (
-            // ⏳ Loading වෙන වෙලාවට පේන සරල Skeleton එකක්
             <div className="space-y-3">
               <div className="h-20 bg-slate-100 rounded-2xl animate-pulse" />
               <div className="h-20 bg-slate-100 rounded-2xl animate-pulse" />
             </div>
           ) : blogs.length === 0 ? (
-            // 📭 තවම කිසිම පෝස්ට් එකක් නැති නම් පේන UI එක
             <div className="text-center py-12 bg-white rounded-2xl border border-slate-100 p-6">
               <p className="text-sm font-medium text-slate-500">You haven't published any articles yet.</p>
             </div>
           ) : (
-            // ✅ Supabase වලින් එන Real Blogs ටික map කරනවා
             blogs.map((blog) => (
               <AdminBlogCard 
                 key={blog.id} 
                 blog={{
                   id: blog.id,
                   title: blog.title,
-                  image: blog.image_url, // DB එකේ column එකට ගලපනවා
+                  image: blog.image_url,
                   date: new Date(blog.created_at).toLocaleDateString('en-US', {
                     month: 'long',
                     day: 'numeric',
@@ -143,11 +141,11 @@ export default function AdminDashboard() {
         </div>
       </main>
 
-      {/* Create Post Modal */}
       <CreatePostModal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onPostCreated={fetchPosts} // 👈 පෝස්ට් එකක් දාපු ගමන් auto ලිස්ට් එක ලෝඩ් වෙනවා
+        onClose={handleModalClose} 
+        onPostCreated={fetchPosts}
+        editingPost={editingPost}
       />
 
     </div>
