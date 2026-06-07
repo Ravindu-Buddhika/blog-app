@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { postService } from '@/services/postService';
 import Navbar from '@/components/Navbar';
 import BlogCardMini from '@/components/BlogCardMini';
 
-export default function HomePage() {
+function BlogHomeContent() {
   const searchParams = useSearchParams();
   const category = searchParams.get('category');
   const router = useRouter();
@@ -94,7 +94,6 @@ export default function HomePage() {
       }
     };
 
-
     const delayDebounceFn = setTimeout(() => {
       fetchHomePosts();
     }, 300);
@@ -136,7 +135,7 @@ export default function HomePage() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={category ? `Search blogs in "${category}"...` : "Search blogs..."}
-            className="w-full px-5 py-3.5 bg-white border border-slate-300 rounded-full shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition pl-12"
+            className="w-full px-5 py-3.5 bg-white border border-slate-300 rounded-full shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-transparent transition pl-12 text-slate-900"
           />
           <svg className="absolute left-4 top-4 h-5 w-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -222,5 +221,17 @@ export default function HomePage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-black" />
+      </div>
+    }>
+      <BlogHomeContent />
+    </Suspense>
   );
 }
