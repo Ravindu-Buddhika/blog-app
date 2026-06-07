@@ -73,5 +73,27 @@ export const postService = {
 
     if (error) throw error;
     return data;
+  },
+
+  async updatePost(id: number, postData: {
+    title: string;
+    category: string;
+    content: string;
+    imageUrl: string;
+    isPremium: boolean;
+  }) {
+    const { error } = await supabase
+      .from('posts')
+      .update({
+        title: postData.title,
+        category: postData.category,
+        content: postData.content,
+        image_url: postData.imageUrl,
+        is_premium: postData.isPremium,
+      })
+      .eq('id', id);
+
+    if (error) throw error;
+    return true;
   }
 };
