@@ -9,6 +9,7 @@ export async function POST(request: Request) {
   try {
     const { priceAmount, userId, userEmail } = await request.json();
 
+    const origin = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -26,8 +27,9 @@ export async function POST(request: Request) {
         },
       ],
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/subscribe`,
+      
+      success_url: `${origin}/?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/`,
 
       metadata: {
         userId: userId,
